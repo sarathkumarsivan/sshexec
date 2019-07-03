@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"golang.org/x/crypto/ssh"
@@ -85,9 +86,21 @@ func distribute(numTasks int, hosts []string, cmd string) {
 	close(tasks)
 }
 
+type Response struct {
+	TaskId   int    `json:"taskId"`
+	Hostname string `json:"hostname"`
+	StdOut   string `json:"stdout"`
+}
+
 func result(done chan bool) {
 	for result := range results {
-		fmt.Printf("Task id %d, Hostname: %s, Result %s\n", result.task.id, result.task.hostname, result.stdout)
+		response := &Response{
+			TaskId:   result.task.id,
+			Hostname: result.task.hostname,
+			StdOut:   result.stdout,
+		}
+		responseBytes, _ := json.Marshal(response)
+		fmt.Println(string(responseBytes))
 	}
 	done <- true
 }
@@ -154,7 +167,6 @@ var timeout int
 
 func main() {
 	startTime := time.Now()
-
 	flag.StringVar(&hosts, "host", "", "The hostname or IP address of the remote host")
 	flag.IntVar(&port, "port", 22, "specify ssh port to use.  defaults to 22.")
 	flag.StringVar(&username, "username", "", "username on the remote host")
