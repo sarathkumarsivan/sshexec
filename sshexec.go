@@ -216,5 +216,5 @@ func main() {
 	<-done
 	endTime := time.Now()
 	diff := endTime.Sub(startTime)
-	fmt.Println("total time taken ", diff.Seconds(), "seconds")
+	log.Println("total time taken ", diff.Seconds(), "seconds")
 }
