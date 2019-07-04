@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"golang.org/x/crypto/ssh"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -127,6 +128,7 @@ func getConnection(user, password, host string) (*ssh.Client, *ssh.Session, erro
 	return client, session, nil
 }
 
+// Load hostnames or IP Addresses from the configuration file
 func loadHosts(path string) ([]string, error) {
 	var lines []string
 	if !isFile(path) {
@@ -166,6 +168,7 @@ var workers int
 var timeout int
 
 func main() {
+	log.Println("Launching sshexec...")
 	startTime := time.Now()
 	flag.StringVar(&hosts, "host", "", "The hostname or IP address of the remote host")
 	flag.IntVar(&port, "port", 22, "specify ssh port to use.  defaults to 22.")
