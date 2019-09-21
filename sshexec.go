@@ -113,13 +113,14 @@ func connect(user, password, host string) (*ssh.Client, *ssh.Session, error) {
 		Timeout: 5 * time.Second,
 	}
 	conf.HostKeyCallback = ssh.InsecureIgnoreHostKey()
-
 	client, err := ssh.Dial("tcp", host, conf)
+
 	if err != nil {
 		return nil, nil, err
 	}
 
 	session, err := client.NewSession()
+
 	if err != nil {
 		client.Close()
 		return nil, nil, err
