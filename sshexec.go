@@ -205,7 +205,7 @@ func main() {
 	fmt.Printf("password: %s\n", options.password)
 	fmt.Printf("command: %s\n", options.command)
 
-	hostname, _ := loadHosts("hosts")
+	hostname, _ := ReadLines("hosts")
 	fmt.Printf("hostnames: %v\n", hostname)
 
 	numTasks := len(hostname)
