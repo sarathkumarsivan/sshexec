@@ -48,7 +48,7 @@ func runCmd(cmd, hostname string) string {
 	if !strings.Contains(hostname, ":") {
 		hostname = hostname + ":22"
 	}
-	client, session, err := getConnection(username, password, hostname)
+	client, session, err := connect(username, password, hostname)
 	if err != nil {
 		//panic(err)
 		return ErrConRefused
@@ -106,15 +106,15 @@ func result(done chan bool) {
 	done <- true
 }
 
-func getConnection(user, password, host string) (*ssh.Client, *ssh.Session, error) {
-	sshConfig := &ssh.ClientConfig{
+func connect(user, password, host string) (*ssh.Client, *ssh.Session, error) {
+	conf := &ssh.ClientConfig{
 		User:    user,
 		Auth:    []ssh.AuthMethod{ssh.Password(password)},
 		Timeout: 5 * time.Second,
 	}
-	sshConfig.HostKeyCallback = ssh.InsecureIgnoreHostKey()
+	conf.HostKeyCallback = ssh.InsecureIgnoreHostKey()
 
-	client, err := ssh.Dial("tcp", host, sshConfig)
+	client, err := ssh.Dial("tcp", host, conf)
 	if err != nil {
 		return nil, nil, err
 	}
