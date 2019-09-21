@@ -128,10 +128,10 @@ func connect(user, password, host string) (*ssh.Client, *ssh.Session, error) {
 	return client, session, nil
 }
 
-// Load hostnames or IP Addresses from the configuration file
-func loadHosts(path string) ([]string, error) {
+// Read lines from the specified file.
+func ReadLines(path string) ([]string, error) {
 	var lines []string
-	if !isFile(path) {
+	if !IsFile(path) {
 		return lines, nil
 	}
 	file, err := os.Open(path)
@@ -146,7 +146,7 @@ func loadHosts(path string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
-func isDir(path string) bool {
+func IsDir(path string) bool {
 	info, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false
@@ -154,8 +154,8 @@ func isDir(path string) bool {
 	return info.IsDir()
 }
 
-func isFile(path string) bool {
-	return !isDir(path)
+func IsFile(path string) bool {
+	return !IsDir(path)
 }
 
 var hostFile string
