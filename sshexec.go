@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	_ "github.com/sarathkumarsivan/sshexec/ioutil"
+	"github.com/sarathkumarsivan/sshexec/ioutil"
 	"golang.org/x/crypto/ssh"
 	"log"
 	"os"
