@@ -137,7 +137,7 @@ func connect(host string, port int, user, pass string) (*ssh.Client, *ssh.Sessio
 func ReadLines(path string) ([]string, error) {
 	var lines []string
 
-	if !IsFile(path) {
+	if !ioutil.IsFile(path) {
 		return lines, nil
 	}
 
