@@ -15,9 +15,12 @@ import (
 )
 
 type Task struct {
-	id       int
-	hostname string
-	cmd      string
+	id   int
+	host string
+	port int
+	user string
+	pass string
+	cmd  string
 }
 
 type Result struct {
@@ -26,13 +29,12 @@ type Result struct {
 }
 
 type Option struct {
-	hostname string
-	port     int
-	username string
-	password string
-	command  string
-	workers  int
-	timeout  int
+	host    string
+	user    string
+	pass    string
+	cmd     string
+	workers int
+	timeout int
 }
 
 const (
@@ -42,13 +44,13 @@ const (
 var tasks = make(chan Task, 100)
 var results = make(chan Result, 100)
 
-func runCmd(cmd, hostname string) string {
-	hostname = strings.TrimSpace(hostname)
+func runCmd(host string, port int, user, pass, cmd string) string {
+	host = strings.TrimSpace(host)
 
-	if !strings.Contains(hostname, ":") {
-		hostname = hostname + ":22"
+	if !strings.Contains(host, ":") {
+		host = host + ":22"
 	}
-	client, session, err := connect(username, password, hostname)
+	client, session, err := connect(user, port, pass, host)
 	if err != nil {
 		//panic(err)
 		return ErrConRefused
@@ -63,7 +65,7 @@ func runCmd(cmd, hostname string) string {
 
 func worker(group *sync.WaitGroup) {
 	for task := range tasks {
-		output := Result{task, runCmd(task.cmd, task.hostname)}
+		output := Result{task, runCmd(task.host, task.port, task.user, task.pass, task.cmd)}
 		results <- output
 	}
 	group.Done()
@@ -81,7 +83,7 @@ func createWorkerPool(workers int) {
 
 func distribute(numTasks int, hosts []string, cmd string) {
 	for i := 0; i < numTasks; i++ {
-		task := Task{i, hosts[i], cmd}
+		task := Task{i, hosts[i], 22, "", "", cmd}
 		tasks <- task
 	}
 	close(tasks)
@@ -97,7 +99,7 @@ func result(done chan bool) {
 	for result := range results {
 		response := &Response{
 			TaskId:   result.task.id,
-			Hostname: result.task.hostname,
+			Hostname: result.task.host,
 			StdOut:   result.stdout,
 		}
 		responseBytes, _ := json.Marshal(response)
@@ -106,14 +108,15 @@ func result(done chan bool) {
 	done <- true
 }
 
-func connect(user, password, host string) (*ssh.Client, *ssh.Session, error) {
+func connect(host string, port int, user, pass string) (*ssh.Client, *ssh.Session, error) {
 	conf := &ssh.ClientConfig{
 		User:    user,
-		Auth:    []ssh.AuthMethod{ssh.Password(password)},
+		Auth:    []ssh.AuthMethod{ssh.Password(pass)},
 		Timeout: 5 * time.Second,
 	}
+
 	conf.HostKeyCallback = ssh.InsecureIgnoreHostKey()
-	client, err := ssh.Dial("tcp", host, conf)
+	client, err := ssh.Dial("tcp", fmt.Sprintf("%s:%d", host, port), conf)
 
 	if err != nil {
 		return nil, nil, err
@@ -132,18 +135,24 @@ func connect(user, password, host string) (*ssh.Client, *ssh.Session, error) {
 // Read lines from the specified file.
 func ReadLines(path string) ([]string, error) {
 	var lines []string
+
 	if !IsFile(path) {
 		return lines, nil
 	}
+
 	file, err := os.Open(path)
+
 	if err != nil {
 		return nil, err
 	}
+
 	defer file.Close()
 	scanner := bufio.NewScanner(file)
+
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
+
 	return lines, scanner.Err()
 }
 
@@ -159,64 +168,58 @@ func IsFile(path string) bool {
 	return !IsDir(path)
 }
 
-var hostFile string
-var hosts string
-var username string
-var password string
-var port int
-var command string
-var workers int
-var timeout int
-
 func main() {
 	log.Println("Launching sshexec...")
 	startTime := time.Now()
-	flag.StringVar(&hosts, "host", "", "The hostname or IP address of the remote host")
-	flag.IntVar(&port, "port", 22, "specify ssh port to use.  defaults to 22.")
-	flag.StringVar(&username, "username", "", "username on the remote host")
-	flag.StringVar(&password, "password", "", "password on the remote host")
-	flag.StringVar(&command, "command", "", "command to run on the remote host")
-	flag.IntVar(&workers, "workers", 100, "specify the number of workers.")
-	flag.IntVar(&timeout, "timeout", 100, "specify the connection timeout.")
+
+	var host = flag.String("host", "", "Hostname or IP Address of the remote server")
+	var port = flag.Int("host", 22, "Port of the remote server")
+	var user = flag.String("user", "", "User who runs the ssh task")
+	var pass = flag.String("pass", "", "Plain text password to run ssh task")
+	var cmd = flag.String("cmd", "", "Plain text password to run ssh task")
+	var workers = flag.Int("workers", 100, "Specify the number of concurrent tasks")
+	var timeout = flag.Int("timeout", 100, "Specify SSH connection timeout")
 
 	flag.Usage = func() {
 		fmt.Printf("Usage of %s:\n", os.Args[0])
-		fmt.Printf("sshexec\t-hosts hosts \\\n" +
-			"\t-username appuser \\\n" +
-			"\t-password 'password' \\\n" +
-			"\t-command 'jps\n")
+		fmt.Printf("sshexec\t \n" +
+			"\t-host 127.0.0.1 \n" +
+			"\t-port 22 \n" +
+			"\t-user appuser \n" +
+			"\t-pass password \n" +
+			"\t-cmd jps \n" +
+			"\t-workers 100 \n" +
+			"\t-timeout 50 \n")
 		flag.PrintDefaults()
 	}
 
 	flag.Parse()
 
-	options := Option{
-		hostname: hosts,
-		port:     port,
-		username: username,
-		password: password,
-		command:  command,
-		workers:  workers,
-		timeout:  timeout,
+	if *host == "" || *user == "" || *pass == "" || *cmd == "" {
+		flag.Usage()
+		os.Exit(1)
 	}
 
-	fmt.Printf("hosts: %s\n", options.hostname)
-	fmt.Printf("port: %d\n", options.port)
-	fmt.Printf("username: %s\n", options.username)
-	fmt.Printf("password: %s\n", options.password)
-	fmt.Printf("command: %s\n", options.command)
+	fmt.Printf("hosts: %s\n", host)
+	fmt.Printf("port: %d\n", port)
+	fmt.Printf("user: %s\n", user)
+	fmt.Printf("pass: %s\n", pass)
+	fmt.Printf("cmd: %s\n", cmd)
+	fmt.Printf("workers: %s\n", workers)
+	fmt.Printf("timeout: %s\n", timeout)
 
-	hostname, _ := ReadLines("hosts")
-	fmt.Printf("hostnames: %v\n", hostname)
+	var hosts, _ = ReadLines(*host)
+	fmt.Printf("hostnames: %v\n", host)
 
-	numTasks := len(hostname)
-	go distribute(numTasks, hostname, command)
+	numTasks := len(hosts)
+	go distribute(numTasks, hosts, *cmd)
 	done := make(chan bool)
 	go result(done)
-	createWorkerPool(workers)
+	createWorkerPool(*workers)
 	<-done
 	endTime := time.Now()
 	diff := endTime.Sub(startTime)
+
 	log.Println("Task completed!")
 	log.Println("Total time taken ", diff.Seconds(), "seconds")
 }
