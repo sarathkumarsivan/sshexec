@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/sarathkumarsivan/sshexec/ioutil"
 	"golang.org/x/crypto/ssh"
 	"log"
 	"os"
@@ -154,18 +155,6 @@ func ReadLines(path string) ([]string, error) {
 	}
 
 	return lines, scanner.Err()
-}
-
-func IsDir(path string) bool {
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return info.IsDir()
-}
-
-func IsFile(path string) bool {
-	return !IsDir(path)
 }
 
 func main() {
