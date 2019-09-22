@@ -162,7 +162,7 @@ func main() {
 	startTime := time.Now()
 
 	var host = flag.String("host", "", "Hostname or IP Address of the remote server")
-	var port = flag.Int("host", 22, "Port of the remote server")
+	var port = flag.Int("port", 22, "Port of the remote server")
 	var user = flag.String("user", "", "User who runs the ssh task")
 	var pass = flag.String("pass", "", "Plain text password to run ssh task")
 	var cmd = flag.String("cmd", "", "Plain text password to run ssh task")
