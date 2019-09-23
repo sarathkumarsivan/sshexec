@@ -43,6 +43,8 @@ const (
 )
 
 const DefaultSSHPort int = 22
+const DefaultWorkers int = 100
+const DefaultTimeout int = 60
 
 var tasks = make(chan Task, 100)
 var results = make(chan Result, 100)
@@ -168,7 +170,7 @@ func main() {
 	var user = flag.String("user", "", "User who runs the ssh task")
 	var pass = flag.String("pass", "", "Plain text password to run ssh task")
 	var cmd = flag.String("cmd", "", "Plain text password to run ssh task")
-	var workers = flag.Int("workers", 100, "Specify the number of concurrent tasks")
+	var workers = flag.Int("workers", DefaultWorkers, "Specify the number of concurrent tasks")
 	var timeout = flag.Int("timeout", 100, "Specify SSH connection timeout")
 
 	flag.Usage = func() {
