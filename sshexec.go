@@ -42,6 +42,8 @@ const (
 	ErrConRefused = "Error: Connection Refused!"
 )
 
+const DefaultSSHPort = 22
+
 var tasks = make(chan Task, 100)
 var results = make(chan Result, 100)
 
@@ -208,7 +210,6 @@ func main() {
 	<-done
 	endTime := time.Now()
 	diff := endTime.Sub(startTime)
-
 	log.Println("Task completed!")
 	log.Println("Total time taken ", diff.Seconds(), "seconds")
 }
