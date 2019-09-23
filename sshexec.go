@@ -42,7 +42,7 @@ const (
 	ErrConRefused = "Error: Connection Refused!"
 )
 
-const DefaultSSHPort = 22
+const DefaultSSHPort int = 22
 
 var tasks = make(chan Task, 100)
 var results = make(chan Result, 100)
@@ -86,7 +86,7 @@ func createWorkerPool(workers int) {
 
 func distribute(numTasks int, hosts []string, cmd string) {
 	for i := 0; i < numTasks; i++ {
-		task := Task{i, hosts[i], 22, "", "", cmd}
+		task := Task{i, hosts[i], DefaultSSHPort, "", "", cmd}
 		tasks <- task
 	}
 	close(tasks)
@@ -164,7 +164,7 @@ func main() {
 	startTime := time.Now()
 
 	var host = flag.String("host", "", "Hostname or IP Address of the remote server")
-	var port = flag.Int("port", 22, "Port of the remote server")
+	var port = flag.Int("port", DefaultSSHPort, "Port of the remote server")
 	var user = flag.String("user", "", "User who runs the ssh task")
 	var pass = flag.String("pass", "", "Plain text password to run ssh task")
 	var cmd = flag.String("cmd", "", "Plain text password to run ssh task")
